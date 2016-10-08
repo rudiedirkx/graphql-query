@@ -1,10 +1,24 @@
 <?php
 
+class Enum {
+
+	protected $option;
+
+	public function __construct($option) {
+		$this->option = $option;
+	}
+
+	public function __toString() {
+		return $this->option;
+	}
+
+}
+
 class Container {
 
-	public $attributes = [];
-	public $fields = [];
-	public $children = [];
+	protected $attributes = [];
+	protected $fields = [];
+	protected $children = [];
 
 	public function attribute($name, $value) {
 		$this->attributes[$name] = $value;
@@ -36,34 +50,55 @@ class Container {
 	}
 
 	public function render($depth) {
+		$indent = $this->indent($depth);
 		$output = '';
 
 		// Fields
 		foreach ($this->fields as $name) {
-			$output .= $this->indent($depth) . $name . "\n";
+			$output .= $indent . $name . "\n";
 		}
 
 		// Children
 		foreach ($this->children as $name => $child) {
 			$attributes = $child->renderAttributes();
-			$output .= $this->indent($depth) . $name . $attributes . " {\n";
+			$output .= $indent . $name . $attributes . " {\n";
 			$output .= $child->render($depth + 1);
-			$output .= $this->indent($depth) . "}\n";
+			$output .= $indent . "}\n";
 		}
 
 		return $output;
 	}
 
 	protected function renderAttributes() {
-		$attributes = [];
-		foreach ($this->attributes as $name => $value) {
-			$attributes[] = $name . ': ' . $this->renderAttributeValue($value);
+		if ($this->attributes) {
+			$attributes = $this->renderAttributeValues($this->attributes);
+			return '(' . $attributes . ')';
 		}
 
-		return $attributes ? '(' . implode(', ', $attributes) . ')' : '';
+		return '';
+	}
+
+	protected function renderAttributeValues($attributes) {
+		$components = [];
+		foreach ($attributes as $name => $value) {
+			$components[] = $name . ': ' . $this->renderAttributeValue($value);
+		}
+
+		return implode(', ', $components);
 	}
 
 	protected function renderAttributeValue($value) {
+		// Enums are unquoted strings
+		if ($value instanceof Enum) {
+			return (string) $value;
+		}
+
+		// Arrays get another round of recursion
+		if (is_array($value)) {
+			return '{' . $this->renderAttributeValues($value) . '}';
+		}
+
+		// All the rest is scalar
 		return json_encode($value);
 	}
 
@@ -83,6 +118,10 @@ class Query extends Container {
 		return "query {\n" . $this->render(1) . "}";
 	}
 
+	static public function enum($option) {
+		return new Enum($option);
+	}
+
 }
 
 header('Content-type: text/plain; charset=utf-8');
@@ -92,7 +131,10 @@ $query->field('scope');
 $query->child('viewer');
 $query->viewer->fields('id', 'name');
 $query->viewer->child('repos');
-$query->viewer->repos->attribute('public', true)->attribute('limit', 10)->attribute('order', ['field' => 'stars', 'desc' => true]);
+$query->viewer->repos
+	->attribute('public', true)
+	->attribute('limit', 10)
+	->attribute('order', ['field' => Query::enum('STARS'), 'direction' => Query::enum('DESC')]);
 $query->viewer->repos->fields('id', 'path');
 
 // echo "====\n";
