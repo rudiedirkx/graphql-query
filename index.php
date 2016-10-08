@@ -114,8 +114,14 @@ class Container {
 
 class Query extends Container {
 
+	protected $root;
+
+	public function __construct($root = 'query') {
+		$this->root = $root;
+	}
+
 	public function build() {
-		return "query {\n" . $this->render(1) . "}";
+		return $this->root . " {\n" . $this->render(1) . "}";
 	}
 
 	static public function enum($option) {
