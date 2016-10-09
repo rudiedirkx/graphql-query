@@ -16,8 +16,10 @@ class Enum {
 
 class Container {
 
+	protected $fragmentType;
 	protected $attributes = [];
 	protected $fields = [];
+	protected $fragments = [];
 	protected $children = [];
 
 	public function attribute($name, $value) {
@@ -49,9 +51,22 @@ class Container {
 		return $this;
 	}
 
+	public function fragment($type) {
+		$child = new Container();
+		$this->fragments[$type] = $child;
+		return $child;
+	}
+
 	public function render($depth) {
 		$indent = $this->indent($depth);
 		$output = '';
+
+		// Fragments
+		foreach ($this->fragments as $type => $child) {
+			$output .= $indent . '... on ' . $type . " {\n";
+			$output .= $child->render($depth + 1);
+			$output .= $indent . "}\n";
+		}
 
 		// Fields
 		foreach ($this->fields as $name) {
@@ -107,21 +122,50 @@ class Container {
 	}
 
 	public function __get($name) {
-		return @$this->children[$name];
+		return $this->children[$name] ?? $this->fragments[$name] ?? null;
 	}
 
 }
 
 class Query extends Container {
 
-	protected $root;
+	protected $name;
+	protected $fragmentDefinitions = [];
 
-	public function __construct($root = 'query') {
-		$this->root = $root;
+	public function __construct($name = '') {
+		$this->name = $name;
+	}
+
+	public function defineFragment($name, $type) {
+		$child = new Container();
+		$child->fragmentType = $type;
+		$this->fragmentDefinitions[$name] = $child;
+		return $child;
 	}
 
 	public function build() {
-		return $this->root . " {\n" . $this->render(1) . "}";
+		return trim($this->buildQuery() . $this->buildFragmentDefinitions()) . "\n";
+	}
+
+	protected function buildQuery() {
+		return "query {$this->name} {\n" . $this->render(1) . "}\n\n";
+	}
+
+	protected function buildFragmentDefinitions() {
+		$output = '';
+		foreach ($this->fragmentDefinitions as $name => $child) {
+			$type = $child->fragmentType;
+
+			$output .= "fragment $name on $type {\n";
+			$output .= $child->render(1);
+			$output .= "}\n\n";
+		}
+
+		return $output;
+	}
+
+	public function __get($name) {
+		return $this->fragmentDefinitions[$name] ?? parent::__get($name);
 	}
 
 	static public function enum($option) {
@@ -132,16 +176,24 @@ class Query extends Container {
 
 header('Content-type: text/plain; charset=utf-8');
 
-$query = new Query;
+$query = new Query('TestQueryWithEverything');
+$query->defineFragment('userStuff', 'User');
+$query->userStuff->fields('id', 'name', 'path');
 $query->field('scope');
 $query->child('viewer');
-$query->viewer->fields('id', 'name');
+$query->viewer->field('...userStuff');
 $query->viewer->child('repos');
 $query->viewer->repos
 	->attribute('public', true)
 	->attribute('limit', 10)
 	->attribute('order', ['field' => Query::enum('STARS'), 'direction' => Query::enum('DESC')]);
 $query->viewer->repos->fields('id', 'path');
+$query->viewer->repos->fragment('PublicRepo');
+$query->viewer->repos->PublicRepo->field('stars');
+$query->viewer->repos->fragment('PrivateRepo');
+$query->viewer->repos->PrivateRepo->fields('status', 'permissions');
+$query->viewer->repos->PrivateRepo->child('members');
+$query->viewer->repos->PrivateRepo->members->field('...userStuff');
 
 // echo "====\n";
 // echo $repos->render(2) . "\n";
