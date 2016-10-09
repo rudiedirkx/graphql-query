@@ -108,8 +108,13 @@ class Container {
 			return (string) $value;
 		}
 
-		// Arrays get another round of recursion
 		if (is_array($value)) {
+			// JSON arrays are JSON
+			if (isset($value[0])) {
+				return json_encode($value);
+			}
+
+			// Object arrays get another round of recursion
 			return '{' . $this->renderAttributeValues($value) . '}';
 		}
 
@@ -180,6 +185,9 @@ $query = new Query('TestQueryWithEverything');
 $query->defineFragment('userStuff', 'User');
 $query->userStuff->fields('id', 'name', 'path');
 $query->field('scope');
+$query->child('friends');
+$query->friends->attribute('names', ['marc', 'jeff']);
+$query->friends->fields('id', 'name');
 $query->child('viewer');
 $query->viewer->field('...userStuff');
 $query->viewer->child('repos');
