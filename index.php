@@ -16,11 +16,12 @@ class Enum {
 
 class Container {
 
-	protected $fragmentType;
 	protected $attributes = [];
+
+	// Fields and Fragments can have the same name ('user' field and 'user' type), so they
+	// can't be in the same list.
 	protected $fields = [];
 	protected $fragments = [];
-	protected $children = [];
 
 	public function attribute($name, $value) {
 		$this->attributes[$name] = $value;
@@ -35,26 +36,28 @@ class Container {
 		return $this;
 	}
 
-	public function child($name) {
-		$child = new Container();
-		$this->children[$name] = $child;
-		return $child;
-	}
-
 	public function field($name) {
-		$this->fields[] = $name;
-		return $this;
+		return $this->fields[$name] = new Container;
 	}
 
 	public function fields(...$names) {
-		array_map([$this, 'field'], $names);
+		foreach ($names as $name) {
+			$this->field($name);
+		}
+
 		return $this;
 	}
 
 	public function fragment($type) {
-		$child = new Container();
-		$this->fragments[$type] = $child;
-		return $child;
+		return $this->fragments[$type] = new FragmentContainer($type);
+	}
+
+	public function fragments(...$types) {
+		foreach ($types as $type) {
+			$this->fragment($type);
+		}
+
+		return $this;
 	}
 
 	public function render($depth) {
@@ -62,26 +65,31 @@ class Container {
 		$output = '';
 
 		// Fragments
-		foreach ($this->fragments as $type => $child) {
-			$output .= $indent . '... on ' . $type . " {\n";
-			$output .= $child->render($depth + 1);
-			$output .= $indent . "}\n";
+		foreach ($this->fragments as $index => $container) {
+			$output .= $indent . $container->renderSignature($index) . $container->renderChildren($depth) . "\n";
 		}
 
 		// Fields
-		foreach ($this->fields as $name) {
-			$output .= $indent . $name . "\n";
-		}
-
-		// Children
-		foreach ($this->children as $name => $child) {
-			$attributes = $child->renderAttributes();
-			$output .= $indent . $name . $attributes . " {\n";
-			$output .= $child->render($depth + 1);
-			$output .= $indent . "}\n";
+		foreach ($this->fields as $index => $container) {
+			$output .= $indent . $container->renderSignature($index) . $container->renderChildren($depth) . "\n";
 		}
 
 		return $output;
+	}
+
+	protected function renderSignature($name) {
+		return $name . $this->renderAttributes();
+	}
+
+	protected function renderChildren($depth) {
+		if ($this->fragments || $this->fields) {
+			return
+				" {\n" .
+				$this->render($depth + 1) .
+				$this->indent($depth) . "}";
+		}
+
+		return '';
 	}
 
 	protected function renderAttributes() {
@@ -127,7 +135,27 @@ class Container {
 	}
 
 	public function __get($name) {
-		return $this->children[$name] ?? $this->fragments[$name] ?? null;
+		return $this->fields[$name] ?? $this->fragments[$name] ?? null;
+	}
+
+}
+
+class FragmentContainer extends Container {
+
+	public function __construct($type) {
+		$this->type = $type;
+	}
+
+	protected function renderSignature($index) {
+		return '... on ' . $this->type;
+	}
+
+}
+
+class FragmentDefinitionContainer extends Container {
+
+	public function __construct($type) {
+		$this->type = $type;
 	}
 
 }
@@ -142,10 +170,7 @@ class Query extends Container {
 	}
 
 	public function defineFragment($name, $type) {
-		$child = new Container();
-		$child->fragmentType = $type;
-		$this->fragmentDefinitions[$name] = $child;
-		return $child;
+		return $this->fragmentDefinitions[$name] = new FragmentDefinitionContainer($type);
 	}
 
 	public function build() {
@@ -158,11 +183,11 @@ class Query extends Container {
 
 	protected function buildFragmentDefinitions() {
 		$output = '';
-		foreach ($this->fragmentDefinitions as $name => $child) {
-			$type = $child->fragmentType;
+		foreach ($this->fragmentDefinitions as $name => $container) {
+			$type = $container->type;
 
 			$output .= "fragment $name on $type {\n";
-			$output .= $child->render(1);
+			$output .= $container->render(1);
 			$output .= "}\n\n";
 		}
 
@@ -184,33 +209,22 @@ header('Content-type: text/plain; charset=utf-8');
 $query = new Query('TestQueryWithEverything');
 $query->defineFragment('userStuff', 'User');
 $query->userStuff->fields('id', 'name', 'path');
-$query->field('scope');
-$query->child('friends');
+$query->fields('scope', 'friends', 'viewer');
 $query->friends->attribute('names', ['marc', 'jeff']);
-$query->friends->fields('id', 'name');
-$query->child('viewer');
-$query->viewer->field('...userStuff');
-$query->viewer->child('repos');
+$query->friends->fields('id', 'name', 'picture');
+$query->friends->picture->attribute('size', 50);
+$query->viewer->fields('...userStuff', 'repos');
 $query->viewer->repos
 	->attribute('public', true)
 	->attribute('limit', 10)
 	->attribute('order', ['field' => Query::enum('STARS'), 'direction' => Query::enum('DESC')]);
 $query->viewer->repos->fields('id', 'path');
-$query->viewer->repos->fragment('PublicRepo');
-$query->viewer->repos->PublicRepo->field('stars');
-$query->viewer->repos->fragment('PrivateRepo');
-$query->viewer->repos->PrivateRepo->fields('status', 'permissions');
-$query->viewer->repos->PrivateRepo->child('members');
-$query->viewer->repos->PrivateRepo->members->field('...userStuff');
-
-// echo "====\n";
-// echo $repos->render(2) . "\n";
-// echo "====\n";
-
-// echo "\n\n";
+$query->viewer->repos->fragment('PublicRepo')->fields('stars');
+$query->viewer->repos->fragment('PrivateRepo')->fields('status', 'permissions', 'members');
+$query->viewer->repos->PrivateRepo->members->fields('...userStuff');
 
 echo "====\n";
-echo $query->build() . "\n";
+echo $query->build();
 echo "====\n";
 
 echo "\n\n";
