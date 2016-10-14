@@ -15,7 +15,7 @@ class Query extends Container {
 	}
 
 	public function defineFragment($name, $type) {
-		return $this->fragmentDefinitions[$name] = new FragmentDefinitionContainer($type);
+		return $this->fragmentDefinitions[$name] = new FragmentDefinitionContainer($name, $type);
 	}
 
 	public function build() {

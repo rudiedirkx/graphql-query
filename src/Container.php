@@ -7,12 +7,28 @@ use rdx\graphqlquery\FragmentContainer;
 
 class Container {
 
+	protected $field = '';
+	protected $alias = '';
 	protected $attributes = [];
 
 	// Fields and Fragments can have the same name ('user' field and 'user' type), so they
 	// can't be in the same list.
 	protected $fields = [];
 	protected $fragments = [];
+
+	public function __construct($field, $alias = '') {
+		$this->field = $field;
+		$this->alias = $alias;
+	}
+
+	public function id() {
+		return $this->alias ?: $this->field;
+	}
+
+	public function alias($alias) {
+		$this->alias = $alias;
+		return $this;
+	}
 
 	public function attribute($name, $value) {
 		$this->attributes[$name] = $value;
@@ -27,13 +43,17 @@ class Container {
 		return $this;
 	}
 
-	public function field($name) {
-		return $this->fields[$name] = new Container;
+	public function field($field, $alias = '') {
+		return $this->fields[] = new Container($field, $alias);
 	}
 
 	public function fields(...$names) {
-		foreach ($names as $name) {
-			$this->field($name);
+		if (is_array($names[0])) {
+			$names = $names[0];
+		}
+
+		foreach ($names as $alias => $name) {
+			is_int($alias) ? $this->field($name) : $this->field($name, $alias);
 		}
 
 		return $this;
@@ -56,19 +76,20 @@ class Container {
 		$output = '';
 
 		// Fragments
-		foreach ($this->fragments as $index => $container) {
-			$output .= $indent . $container->renderSignature($index) . $container->renderChildren($depth) . "\n";
+		foreach ($this->fragments as $container) {
+			$output .= $indent . $container->renderSignature() . $container->renderChildren($depth) . "\n";
 		}
 
 		// Fields
-		foreach ($this->fields as $index => $container) {
-			$output .= $indent . $container->renderSignature($index) . $container->renderChildren($depth) . "\n";
+		foreach ($this->fields as $container) {
+			$output .= $indent . $container->renderSignature() . $container->renderChildren($depth) . "\n";
 		}
 
 		return $output;
 	}
 
-	protected function renderSignature($name) {
+	protected function renderSignature() {
+		$name = $this->alias ? "{$this->alias}: {$this->field}" : $this->field;
 		return $name . $this->renderAttributes();
 	}
 
@@ -126,7 +147,13 @@ class Container {
 	}
 
 	public function __get($name) {
-		return $this->fields[$name] ?? $this->fragments[$name] ?? null;
+		foreach ($this->fields as $field) {
+			if ($field->id() == $name) {
+				return $field;
+			}
+		}
+
+		return $this->fragments[$name] ?? null;
 	}
 
 }

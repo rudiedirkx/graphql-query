@@ -4,7 +4,10 @@ namespace rdx\graphqlquery;
 
 class FragmentDefinitionContainer extends Container {
 
-	public function __construct($type) {
+	protected $type = '';
+
+	public function __construct($name, $type) {
+		$this->name = $name;
 		$this->type = $type;
 	}
 

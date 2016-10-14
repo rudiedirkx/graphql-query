@@ -11,8 +11,9 @@ $query->defineFragment('userStuff', 'User');
 $query->userStuff->fields('id', 'name', 'path');
 $query->fields('scope', 'friends', 'viewer');
 $query->friends->attribute('names', ['marc', 'jeff']);
-$query->friends->fields('id', 'name', 'picture');
-$query->friends->picture->attribute('size', 50);
+$query->friends->fields(['id', 'name', 'smallpic' => 'picture', 'picture']);
+$query->friends->smallpic->attribute('size', 50);
+$query->friends->picture->alias('bigpic')->attribute('size', 50); // Alias 'picture' to 'bigpic', and add attribute
 $query->viewer->fields('...userStuff', 'repos');
 $query->viewer->repos
 	->attribute('public', true)
