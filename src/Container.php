@@ -2,6 +2,7 @@
 
 namespace rdx\graphqlquery;
 
+use rdx\graphqlquery\Attribute;
 use rdx\graphqlquery\Enum;
 use rdx\graphqlquery\FragmentContainer;
 
@@ -107,7 +108,7 @@ class Container {
 	protected function renderAttributes() {
 		if ($this->attributes) {
 			$attributes = $this->renderAttributeValues($this->attributes);
-			return '(' . $attributes . ')';
+			return " ($attributes)";
 		}
 
 		return '';
@@ -124,7 +125,7 @@ class Container {
 
 	protected function renderAttributeValue($value) {
 		// Enums are unquoted strings
-		if ($value instanceof Enum) {
+		if ($value instanceof Attribute) {
 			return (string) $value;
 		}
 
@@ -146,14 +147,24 @@ class Container {
 		return str_repeat('  ', $depth);
 	}
 
-	public function __get($name) {
+	public function get($name) {
+		return $this->getField($name) ?: $this->getFragment($name) ?: null;
+	}
+
+	public function getField($name) {
 		foreach ($this->fields as $field) {
 			if ($field->id() == $name) {
 				return $field;
 			}
 		}
+	}
 
-		return $this->fragments[$name] ?? null;
+	public function getFragment($name) {
+		return @$this->fragments[$name];
+	}
+
+	public function __get($name) {
+		return $this->get($name);
 	}
 
 }

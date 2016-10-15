@@ -2,16 +2,8 @@
 
 namespace rdx\graphqlquery;
 
-class Enum {
+use rdx\graphqlquery\Attribute;
 
-	protected $option;
-
-	public function __construct($option) {
-		$this->option = $option;
-	}
-
-	public function __toString() {
-		return $this->option;
-	}
+class Enum extends Attribute {
 
 }
