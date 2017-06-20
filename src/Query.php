@@ -60,7 +60,7 @@ class Query extends Container {
 	protected function buildFragmentDefinitions() {
 		$output = '';
 		foreach ($this->fragmentDefinitions as $name => $container) {
-			$type = $container->type;
+			$type = $container->getType();
 
 			$output .= "fragment $name on $type {\n";
 			$output .= $container->render(1);

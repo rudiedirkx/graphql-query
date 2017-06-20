@@ -11,4 +11,8 @@ class FragmentDefinitionContainer extends Container {
 		$this->type = $type;
 	}
 
+	public function getType() {
+	    return $this->type;
+    }
+
 }
