@@ -163,6 +163,10 @@ class Container {
 		return @$this->fragments[$name];
 	}
 
+    /**
+     * @param $name
+     * @return Container
+     */
 	public function __get($name) {
 		return $this->get($name);
 	}
