@@ -11,15 +11,15 @@ class Query extends Container {
 	protected $name;
 	protected $variables;
 	protected $fragmentDefinitions = [];
-    protected $type;
+	protected $type;
 
-    const TYPE_QUERY = 'query';
-    const TYPE_MUTATION = 'mutation';
+	const TYPE_QUERY = 'query';
+	const TYPE_MUTATION = 'mutation';
 
-    public function __construct($name = null, $variables = [], $type = self::TYPE_QUERY) {
-        $this->type = $type;
-        parent::__construct($name, $variables);
-    }
+	public function __construct($name = null, $variables = [], $type = self::TYPE_QUERY) {
+		$this->type = $type;
+		parent::__construct($name, $variables);
+	}
 
 	public function defineFragment($name, $type) {
 		return $this->fragmentDefinitions[$name] = new FragmentDefinitionContainer($name, $type);
@@ -29,14 +29,14 @@ class Query extends Container {
 		return trim($this->buildQuery() . $this->buildFragmentDefinitions()) . "\n";
 	}
 
-    protected function buildQuery() {
-        $signature = $this->renderSignature();
-        return "$this->type $signature{\n".$this->render(1)."}\n\n";
-    }
+	protected function buildQuery() {
+		$signature = $this->renderSignature();
+		return "$this->type $signature{\n".$this->render(1)."}\n\n";
+	}
 
-    public function setType($type) {
-        $this->type = $type;
-    }
+	public function setType($type) {
+		$this->type = $type;
+	}
 
     protected function renderSignature() {
 		$name = $this->getName();
