@@ -140,7 +140,7 @@ class Container {
 		}
 
 		// All the rest is scalar
-		return json_encode($value);
+		return json_encode($value, JSON_UNESCAPED_UNICODE);
 	}
 
 	protected function indent($depth) {
