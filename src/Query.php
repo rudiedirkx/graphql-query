@@ -18,6 +18,8 @@ class Query extends Container {
 
 	public function __construct($name = null, $variables = [], $type = self::TYPE_QUERY) {
 		$this->type = $type;
+		$this->name = $name;
+		$this->variables = $variables;
 	}
 
 	public function defineFragment($name, $type) {
