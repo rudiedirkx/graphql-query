@@ -18,7 +18,6 @@ class Query extends Container {
 
 	public function __construct($name = null, $variables = [], $type = self::TYPE_QUERY) {
 		$this->type = $type;
-		parent::__construct($name, $variables);
 	}
 
 	public function defineFragment($name, $type) {
@@ -38,7 +37,7 @@ class Query extends Container {
 		$this->type = $type;
 	}
 
-    protected function renderSignature() {
+	protected function renderSignature() {
 		$name = $this->getName();
 		$variables = $this->renderVariables();
 		return "$name$variables";
