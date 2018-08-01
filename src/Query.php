@@ -22,6 +22,14 @@ class Query extends Container {
 		$this->variables = $variables;
 	}
 
+	static function query($name = null, $variables = []) {
+		return new static($name, $variables, $type = self::TYPE_QUERY);
+	}
+
+	static function mutation($name = null, $variables = []) {
+		return new static($name, $variables, $type = self::TYPE_MUTATION);
+	}
+
 	public function defineFragment($name, $type) {
 		return $this->fragmentDefinitions[$name] = new FragmentDefinitionContainer($name, $type);
 	}
