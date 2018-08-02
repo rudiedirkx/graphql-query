@@ -123,6 +123,21 @@ class Container {
 		return implode(', ', $components);
 	}
 
+	protected function renderAttributeArrayValues($attributes) {
+		$components = [];
+		foreach ($attributes as $value) {
+			$components[] = $this->renderAttributeValue($value);
+		}
+
+		return implode(', ', $components);
+	}
+
+
+	protected function isAssociative(array $array) {
+		if (array() === $array) return false;
+		return array_keys($array) !== range(0, count($array) - 1);
+	}
+
 	protected function renderAttributeValue($value) {
 		// Enums are unquoted strings
 		if ($value instanceof Attribute) {
@@ -130,9 +145,8 @@ class Container {
 		}
 
 		if (is_array($value)) {
-			// JSON arrays are JSON
-			if (isset($value[0])) {
-				return json_encode($value);
+			if (!$this->isAssociative($value)) {
+				return '[' . $this->renderAttributeArrayValues($value) . ']';
 			}
 
 			// Object arrays get another round of recursion
