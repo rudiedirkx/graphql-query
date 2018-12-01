@@ -87,18 +87,18 @@ class Query extends Container {
 		return $output;
 	}
 
-    /**
-     * @param $name
-     * @return Container
-     */
+	/**
+	 * @param $name
+	 * @return Container
+	 */
 	public function __get($name) {
 		return $this->getFragmentDefinition($name) ?: parent::get($name);
 	}
 
-    /**
-     * @param $name
-     * @return FragmentDefinitionContainer
-     */
+	/**
+	 * @param $name
+	 * @return FragmentDefinitionContainer
+	 */
 	public function getFragmentDefinition($name) {
 		return $this->fragmentDefinitions[$name] ?? null;
 	}
