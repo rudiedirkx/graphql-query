@@ -174,7 +174,7 @@ class Container {
 	}
 
 	public function getFragment($name) {
-		return @$this->fragments[$name];
+		return $this->fragments[$name] ?? null;
 	}
 
     /**
