@@ -3,7 +3,7 @@ GraphQL query builder
 
 Build a query:
 
-	$query = new Query('TestQueryWithEverything');
+	$query = Query::query('TestQueryWithEverything');
 	$query->defineFragment('userStuff', 'User');
 	$query->userStuff->fields('id', 'name', 'path');
 	$query->fields('scope', 'friends', 'viewer');
@@ -56,4 +56,21 @@ Results in:
 	  id
 	  name
 	  path
+	}
+
+Mutations
+----
+
+Since Mutations are practically the same as Queries, it has the same exact semantics:
+
+	$query = Query::mutation();
+	$query->field('moveProjectCard')->attribute('input', ['cardId' => 123, 'columnId' => 456]);
+	$query->moveProjectCard->fields('clientMutationId');
+
+makes:
+
+	mutation {
+	  moveProjectCard (input: {cardId: 123, columnId: 456}) {
+	    clientMutationId
+	  }
 	}

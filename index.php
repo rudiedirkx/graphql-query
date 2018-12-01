@@ -6,7 +6,7 @@ require 'autoload.php';
 
 header('Content-type: text/plain; charset=utf-8');
 
-$query = new Query('TestQueryWithEverything', ['smallPicSize' => 'int']);
+$query = Query::query('TestQueryWithEverything', ['smallPicSize' => 'int']);
 $query->defineFragment('userStuff', 'User');
 $query->userStuff->fields('id', 'name', 'path');
 $query->fields('scope', 'friends', 'viewer');
@@ -30,4 +30,10 @@ echo "====\n";
 
 echo "\n\n";
 
-print_r($query);
+$query = Query::mutation();
+$query->field('moveProjectCard')->attribute('input', ['cardId' => 123, 'columnId' => 456]);
+$query->moveProjectCard->fields('clientMutationId');
+
+echo "====\n";
+echo $query->build();
+echo "====\n";
