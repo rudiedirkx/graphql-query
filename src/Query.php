@@ -100,7 +100,7 @@ class Query extends Container {
 	 * @return FragmentDefinitionContainer
 	 */
 	public function getFragmentDefinition($name) {
-		return $this->fragmentDefinitions[$name] ?? null;
+		return isset($this->fragmentDefinitions[$name]) ? $this->fragmentDefinitions[$name] : null;
 	}
 
 	static public function enum($name) {
